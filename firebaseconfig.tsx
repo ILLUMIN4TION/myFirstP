@@ -1,6 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { initializeAuth } from "firebase/auth";
+import { getReactNativePersistence, initializeAuth } from "firebase/auth";
+import RNStorage from "@react-native-async-storage/async-storage";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -18,5 +21,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-//Initialize Firebase Authentication (인증관련 객체 만들기)
-export const auth = initializeAuth(app);
+//Initialize Firebase Authentication (인증관련 객체 만들기) , 2번째 매개변수로 들어갈 값값
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(RNStorage),
+});
+
+//firebase의 db, firestore  초기화 ㅣㅊ 가져오기
+export const firestore = getFirestore(app);
+
+//firebase 의 대용량 미디어파이 ㄹ스토리지 초기화 및 가져오기
+
+export const storage = getStorage(app);

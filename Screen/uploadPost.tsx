@@ -13,6 +13,10 @@ import { AntDesign } from "@expo/vector-icons";
 import { useLayoutEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import HeaderBtn from "../components/HeaderBtn";
+import { auth, firestore as firestoreDB, storage } from "../firebaseconfig";
+import { addDoc, collection, updateDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { assetToBlob } from "../utils";
 
 const Conatiner = styled(View)`
   background-color: black;
@@ -84,7 +88,7 @@ export default ({
   const navi = useNavigation();
 
   //사진과 글을 업로드하기 위한 함수
-  const onUpload = () => {
+  const onUpload = async () => {
     //방어코드: text 작성 안한 경우, 작성하도록 알람람
     if (caption === "") {
       Alert.alert("업로드 오류", "캡션을 적어야 업로드가 가능합니다,");
@@ -96,13 +100,57 @@ export default ({
     setLoading(true);
     try {
       //2sever에 데이터 업로드
-      //캡션: 내가 쓴 글
-      //에셋: 내가 선택한 사진들
-      //3.서버에 업로드 완료시 로딩 종료,
-      // setLoading(false);
+      //서버에 업로드할 데이터 셋 만들기기
+      const uploadData = {
+        caption: caption,
+        userID: auth.currentUser?.uid,
+        CreatedAt: Date.now(),
+        nickname: auth.currentUser?.displayName,
+      };
+      //어디 서버에 업로드 할지 경로 지정하기기
+      const path = collection(firestoreDB, "posts");
+      //만든 파일을 토대로 doc로 만들어 올리기
+      const doc = await addDoc(path, uploadData);
+
+      //firebase storage(image) convert(url) upload
+      //1. 여러 사진들을 url형식으로 변환하여 업로드할 배열 만들기
+      const photoURLs = [];
+
+      //2. 여러 사진들을 반복해서 서버에 업로드하고 배열에 넣는다.
+
+      for (const asset of assets) {
+        //  2-2 여러 사진들을 서버에 업로드 storage
+        //2-2-1 경로, blob형태로 추가변환환
+        const path = `posts/${auth.currentUser?.uid}/${doc.id}/${asset.id}.png`;
+        const locationRef = ref(storage, path);
+
+        const blob = await assetToBlob(asset.uri);
+        //  2-3 서버에 업롣한 사진을 url로 변환
+        const result = await uploadBytesResumable(locationRef, blob);
+
+        //  2-4 uRL로 변환된 사진들 배열에 추가
+
+        const url = await getDownloadURL(result.ref);
+
+        photoURLs.push(url);
+
+        await updateDoc(doc, { photos: photoURLs });
+
+        //4. 홈화면(메인화면) 으로 이동
+        if (navi.canGoBack()) {
+          navi.goBack();
+          navi.goBack(); //이전 페이지로 ㄴ이동
+        }
+      }
+
+      //3. url로 변환된 여러 사진들을 넣은 배열을 서버에(firesote) 업로드하여 갱신
     } catch (error) {
       //exception: 예외처리, 업로드가 실패시 --Error
-      //에러발생시에도 로딩 종료
+
+      Alert.alert("error", `${error}`);
+    } finally {
+      //try든 catch든 끝나면 모두 이코드 실행  //에러발생시에도 로딩 종료
+      setLoading(false);
     }
   };
 

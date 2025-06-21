@@ -1,7 +1,26 @@
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Button, StyleSheet, Text, View } from "react-native";
+import {
+  Button,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  ScrollView,
+} from "react-native";
 import { MainStackScreenList, NaviProps } from "../stacks/MainStack";
+import { auth } from "../firebaseconfig";
+import styled from "styled-components";
+import { Timeline } from "../components/TimeLine";
+
+const Logo = styled(Image)`
+  width: 100px;
+  height: 50px;
+`;
+
+const ScrollContainer = styled(ScrollView)`
+  flex: 1;
+`;
 
 export default function Home() {
   //0. init(initialized)
@@ -14,13 +33,22 @@ export default function Home() {
     navi.navigate("CreatePost");
   };
 
+  const signOut = async () => {
+    await auth.signOut();
+  };
+
   //2. Page UI Rendering 페에지를 그려주기위한 영역
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text>InstaDaelim</Text>
+        <Logo source={require("../assets/resources/instaDaelim_title.png")} />
         <Button onPress={goToPage} title={"CREATE"}></Button>
       </View>
+
+      {/* 서버에 저장된 데이터 타임라인 순으로 정렬 */}
+      <ScrollView>
+        <Timeline />
+      </ScrollView>
     </View>
   );
 }
@@ -34,7 +62,6 @@ const styles = StyleSheet.create({
     //alignItems: ''// flex, 모든 기기에서 해당 영역이 얼마정도를 차지하는지 알아서 처리해주는 프로퍼티티
   },
   header: {
-    backgroundColor: "tomato",
     height: 80,
     flexDirection: "row",
     alignItems: "center",
@@ -42,7 +69,7 @@ const styles = StyleSheet.create({
     //paddingLeft: 20,
     //paddingRight:20,
     paddingHorizontal: 15,
-
+    marginTop: 10,
     //width: '100%' 생략가능능
   },
 });
